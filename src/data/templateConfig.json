@@ -1,0 +1,8 @@
+{
+    "templates" :[
+        {"id": "1", "name" : "Tempate 1","deptName":"EMS"},
+        {"id": "2", "name" : "Tempate 2","deptName":"FAZZA"},
+        {"id": "3", "name" : "Tempate 3","deptName":"TRFFIC"}
+        
+    ]
+}
