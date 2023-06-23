@@ -43,12 +43,12 @@ export default function Templates() {
     const [temp, setTemp] = React.useState('');
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState(false);
-
+    const [errorRun, setErrorRun] = React.useState(false);
     const [data, setData] = React.useState<IAvl[]>([]);
     const [cardData, setCardData] = React.useState<ICardData>({ count: '', deptId: '', startTime: '00:00', endTime: '00:00' })
     const [avltrackId, setAvltrackId] = React.useState<string>('');
 
-    const [url, setUrl] = React.useState<string>('http://localhost:8080/NJM/rest/avl');
+    const [url, setUrl] = React.useState<string>('http://ptst-nappsrv01.tdt.ncc:9080/NJM06/rest/avl');
     const [dateValue, setDateValue] = React.useState<any>(dayjs());
     const [isRuning, setIsRuning] = React.useState(false);
     const [isfinished, setIsFinished] = React.useState(false);
@@ -69,7 +69,7 @@ export default function Templates() {
             const endTime: string = data[data.length - 1].avlDatetime;
             const splittedend = endTime.split(" ", 2);
             const filtered: any = dataConfig.templates.filter(a => a.id === temp);
-           
+
             setCardData({ count: data.length.toString(), deptId: filtered[0].deptName, startTime: splittedStart[1], endTime: splittedend[1] });
         }
     }, [data, temp]);
@@ -83,27 +83,40 @@ export default function Templates() {
         setIsRuning(true);
 
 
-        for (let index =0; index < data.length ; index++){
-            var clone = { ...data[index]};
-           
-            clone.avlDatetime = dateValue.format("DD/MM/YYYY")  + " "+ data[index].avlDatetime.split(" ", 2)[1];
-            
-            clone.avlTrackId = avltrackId;
-            
-          
+        for (let index = 0; index < data.length; index++) {
+            var clone = { ...data[index] };
 
-            const response = await fetch(url + '/add', { method: 'POST', headers: { 'Content-Type': 'application/json' },body:JSON.stringify(clone)});
-        
+            clone.avlDatetime = dateValue.format("DD/MM/YYYY") + " " + data[index].avlDatetime.split(" ", 2)[1];
+
+            clone.avlTrackId = avltrackId;
+
+
+            try {
+                const response = await fetch(url + '/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(clone) });
+                if (!response.ok) {
+                    setIsFinished(true);
+                    setErrorRun(true);
+                    break;
+                }
+            } catch (error) {
+                console.log(error);
+                setIsFinished(true);
+                setErrorRun(true);
+                break;
+            }
+
+
             setIsFinished(index === data.length - 1)
-           
+            // setErrorRun(false);
         }
 
-       
+
     };
 
     const handleBack = () => {
         setIsRuning(false);
         setIsFinished(true);
+        setErrorRun(false);
     };
 
     const handleSubmit = (e: any) => {
@@ -111,7 +124,7 @@ export default function Templates() {
             setLoading(true);
             setError(false);
             // get data Template
-            fetch('../data/' + temp + '.json', { headers: { 'Content-Type': 'application/json' }, })
+            fetch('./data/' + temp + '.json', { headers: { 'Content-Type': 'application/json' }, })
                 .then(response => {
                     return response.json();
                 }).then(data => {
@@ -120,6 +133,8 @@ export default function Templates() {
                     // console.log(data);
                 }).catch((e: Error) => {
                     console.error(e.message);
+                    setLoading(false);
+                    setError(true);
                 });
 
         }
@@ -225,13 +240,13 @@ export default function Templates() {
                     </div>
                     <Divider variant="middle"></Divider>
 
-                    
+
                     <FormControl variant='standard' >
                         <TextField label="Backend Url"
                             sx={{ m: 0.5, minWidth: 500 }}
                             hiddenLabel
                             id="url-hidden-label-small"
-                           
+
                             variant="standard"
                             required
                             value={url}
@@ -267,7 +282,7 @@ export default function Templates() {
             ) : (
                 <>
                     {!isfinished && <LinearProgress variant='indeterminate' />}
-                    {isfinished && <Alert severity="success">This is a success alert — check it out!</Alert>}
+                    {isfinished && <Alert severity={errorRun ? "error" : "success"}>Check The Logs</Alert>}
                     {isfinished &&
                         <Button variant="contained" startIcon={<ArrowBackIosIcon />} onClick={handleBack}>
                             Back
